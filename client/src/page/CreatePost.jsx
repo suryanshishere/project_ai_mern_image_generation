@@ -1,23 +1,24 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { preview } from '../assets';
-import { getRandomPrompt } from '../utils';
-import { FormField, Loader } from '../components';
+import { preview } from "../assets";
+import { getRandomPrompt } from "../utils";
+import { FormField, Loader } from "../components";
 
 const CreatePost = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    name: '',
-    prompt: '',
-    photo: '',
+    name: "",
+    prompt: "",
+    text: "",
   });
 
   const [generatingImg, setGeneratingImg] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSurpriseMe = () => {
     const randomPrompt = getRandomPrompt(form.prompt);
@@ -25,63 +26,79 @@ const CreatePost = () => {
   };
 
   const generateImage = async () => {
-    if (form.prompt) {
+    if (form.prompt.trim()) {
+      // Validate prompt is not just whitespace
       try {
         setGeneratingImg(true);
-        const response = await fetch('https://dalle-arbb.onrender.com/api/v1/dalle', {
-          method: 'POST',
+        const response = await fetch("http://localhost:8080/api/v1/dalle", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             prompt: form.prompt,
           }),
         });
 
+        if (!response.ok) {
+          // Check if the response was successful
+          throw new Error("Failed to generate answer");
+        }
+
         const data = await response.json();
-        setForm({ ...form, photo: `data:image/jpeg;base64,${data.photo}` });
+        setForm({ ...form, text: `${data.text}` });
       } catch (err) {
-        alert(err);
+        console.error(err); // Correct the error logging
+        alert(err.message || "Something went wrong");
       } finally {
         setGeneratingImg(false);
       }
     } else {
-      alert('Please provide proper prompt');
+      alert("Please provide a proper prompt");
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (form.prompt && form.photo) {
+    if (form.name.trim() && form.prompt && form.photo) {
+      // Validate the name field
       setLoading(true);
       try {
-        const response = await fetch('https://dalle-arbb.onrender.com/api/v1/post', {
-          method: 'POST',
+        const response = await fetch("http://localhost:8080/api/v1/post", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ ...form }),
         });
 
+        if (!response.ok) {
+          // Check if the response was successful
+          throw new Error("Failed to submit post");
+        }
+
         await response.json();
-        alert('Success');
-        navigate('/');
+        alert("Success");
+        navigate("/");
       } catch (err) {
-        alert(err);
+        console.error(err); // Correct the error logging
+        alert(err.message || "Something went wrong");
       } finally {
         setLoading(false);
       }
     } else {
-      alert('Please generate an image with proper details');
+      alert("Please generate an image with proper details");
     }
   };
 
   return (
     <section className="max-w-7xl mx-auto">
       <div>
-        <h1 className="font-extrabold text-[#222328] text-[32px]">Create</h1>
-        <p className="mt-2 text-[#666e75] text-[14px] max-w-[500px]">Generate an imaginative image through DALL-E AI and share it with the community</p>
+        <h1 className="font-extrabold text-[#222328] text-[32px]">ASK & LEARN</h1>
+        <p className="mt-2 text-[#666e75] text-[14px] max-w-[500px]">
+         Ask question to your AI friend
+        </p>
       </div>
 
       <form className="mt-16 max-w-3xl" onSubmit={handleSubmit}>
@@ -96,7 +113,7 @@ const CreatePost = () => {
           />
 
           <FormField
-            labelName="Prompt"
+            labelName="Ask Question"
             type="text"
             name="prompt"
             placeholder="An Impressionist oil painting of sunflowers in a purple vase…"
@@ -106,8 +123,8 @@ const CreatePost = () => {
             handleSurpriseMe={handleSurpriseMe}
           />
 
-          <div className="relative bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-64 p-3 h-64 flex justify-center items-center">
-            { form.photo ? (
+          {/* <div className="relative bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-64 p-3 h-64 flex justify-center items-center">
+            {form.photo ? (
               <img
                 src={form.photo}
                 alt={form.prompt}
@@ -126,7 +143,8 @@ const CreatePost = () => {
                 <Loader />
               </div>
             )}
-          </div>
+          </div> */}
+          <p>{form.text}</p>
         </div>
 
         <div className="mt-5 flex gap-5">
@@ -135,19 +153,22 @@ const CreatePost = () => {
             onClick={generateImage}
             className=" text-white bg-green-700 font-medium rounded-md text-sm w-full sm:w-auto px-5 py-2.5 text-center"
           >
-            {generatingImg ? 'Generating...' : 'Generate'}
+            {generatingImg ? "Generating..." : "Generate"}
           </button>
         </div>
 
-        <div className="mt-10">
-          <p className="mt-2 text-[#666e75] text-[14px]">** Once you have created the image you want, you can share it with others in the community **</p>
+        {/* <div className="mt-10">
+          <p className="mt-2 text-[#666e75] text-[14px]">
+            ** Once you have created the image you want, you can share it with
+            others in the community **
+          </p>
           <button
             type="submit"
             className="mt-3 text-white bg-[#6469ff] font-medium rounded-md text-sm w-full sm:w-auto px-5 py-2.5 text-center"
           >
-            {loading ? 'Sharing...' : 'Share with the Community'}
+            {loading ? "Sharing..." : "Share with the Community"}
           </button>
-        </div>
+        </div> */}
       </form>
     </section>
   );
